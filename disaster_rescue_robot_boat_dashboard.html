@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disaster Rescue Robot & Boat Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root{
+      --bg:#07111f;--panel:#0d1b2f;--panel2:#10233d;--text:#eff7ff;--muted:#9db1c9;
+      --green:#31e981;--red:#ff4d5e;--yellow:#ffc247;--blue:#39a7ff;--border:rgba(255,255,255,.12);
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,Arial,sans-serif;background:radial-gradient(circle at top,#133760 0,#07111f 45%,#030812 100%);color:var(--text)}
+    header{position:sticky;top:0;z-index:20;background:rgba(3,8,18,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:14px}.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--red),var(--blue));display:grid;place-items:center;font-size:26px;box-shadow:0 0 28px rgba(57,167,255,.35)}
+    h1{font-size:22px;margin:0;font-weight:900}.subtitle{color:var(--muted);font-size:13px;margin-top:4px}.statusbar{display:flex;gap:10px;flex-wrap:wrap}.pill{padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border);font-size:13px;font-weight:700}.live{color:var(--green)}
+    .wrap{padding:24px;max-width:1500px;margin:auto}.grid{display:grid;grid-template-columns:1.3fr .7fr;gap:20px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}.card,.panel{background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.035));border:1px solid var(--border);border-radius:24px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+    .card b{display:block;font-size:28px;margin-top:8px}.label{color:var(--muted);font-size:13px}.ok{color:var(--green)}.danger{color:var(--red)}.warn{color:var(--yellow)}.blue{color:var(--blue)}
+    #map{height:610px;border-radius:22px;border:1px solid var(--border);overflow:hidden;background:#13233b}.panel h2{margin:0 0 14px;font-size:18px}.section{margin-bottom:18px}.unit{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid var(--border);margin-bottom:10px}.unit small{color:var(--muted)}
+    button{border:0;border-radius:14px;padding:12px 14px;font-weight:800;color:white;cursor:pointer;background:linear-gradient(135deg,#1c73ff,#17c7ff);transition:.2s}button:hover{transform:translateY(-2px)}button.red{background:linear-gradient(135deg,#ff314f,#b90020)}button.green{background:linear-gradient(135deg,#0fc56d,#00a84e)}button.yellow{background:linear-gradient(135deg,#ffb01f,#ff7a00)}
+    .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.controls button:nth-child(1){grid-column:2}.controls button:nth-child(2){grid-column:1}.controls button:nth-child(3){grid-column:2}.controls button:nth-child(4){grid-column:3}.controls button:nth-child(5){grid-column:1/4}.slider{width:100%;accent-color:var(--blue)}
+    table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:18px}th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}th{color:#d8edff;background:rgba(57,167,255,.12)}td{color:#dcecff}.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+    .form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}input,select,textarea{width:100%;padding:13px;border-radius:14px;border:1px solid var(--border);background:rgba(0,0,0,.24);color:white;outline:none}textarea{grid-column:1/3;min-height:84px}.form button{grid-column:1/3}
+    .tag{font-size:12px;padding:6px 9px;border-radius:999px;background:rgba(49,233,129,.14);color:var(--green);border:1px solid rgba(49,233,129,.25)}.tag.red{background:rgba(255,77,94,.14);color:var(--red);border-color:rgba(255,77,94,.25)}.tag.yellow{background:rgba(255,194,71,.14);color:var(--yellow);border-color:rgba(255,194,71,.25)}
+    footer{text-align:center;color:var(--muted);padding:28px}.blink{animation:blink 1.1s infinite}@keyframes blink{50%{opacity:.35}}@media(max-width:1000px){.grid,.two{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}#map{height:460px}}@media(max-width:560px){header,.wrap{padding:14px}.cards{grid-template-columns:1fr}.form{grid-template-columns:1fr}textarea,.form button{grid-column:1}.controls{grid-template-columns:1fr}.controls button{grid-column:auto!important}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">🚑</div><div><h1>Disaster Rescue Robot & Boat Command Center</h1><div class="subtitle">Realistic HTML demo: rescue robot, flood boat, ambulance map, hospitals, emergency dispatch</div></div></div>
+  <div class="statusbar"><div class="pill live blink">● LIVE SYSTEM</div><div class="pill">Sri Lanka Rescue Demo</div><div class="pill" id="clock">--:--</div></div>
+</header>
+
+<div class="wrap">
+  <div class="cards">
+    <div class="card"><span class="label">Active Emergency Cases</span><b class="danger" id="caseCount">3</b></div>
+    <div class="card"><span class="label">Robots Online</span><b class="ok">2/2</b></div>
+    <div class="card"><span class="label">Nearest Ambulance ETA</span><b class="blue" id="eta">07 min</b></div>
+    <div class="card"><span class="label">Hospital Capacity</span><b class="warn">68%</b></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Emergency Map — Robots, Boat, Ambulances & Hospitals</h2>
+      <div id="map"></div>
+    </div>
+    <div>
+      <div class="panel section">
+        <h2>Rescue Unit Control</h2>
+        <div class="unit"><div><b>LAND ROBOT R-01</b><br><small>GPS + Camera + Gas + PIR + Ultrasonic</small></div><span class="tag">ONLINE</span></div>
+        <div class="unit"><div><b>FLOOD BOAT B-01</b><br><small>Water rescue + rope delivery + live camera</small></div><span class="tag">ONLINE</span></div>
+        <div class="controls">
+          <button onclick="moveUnit('forward')">▲ Forward</button>
+          <button onclick="moveUnit('left')">◀ Left</button>
+          <button onclick="moveUnit('stop')" class="red">■ Stop</button>
+          <button onclick="moveUnit('right')">Right ▶</button>
+          <button onclick="moveUnit('backward')">▼ Backward</button>
+        </div>
+        <p class="label">Speed Control</p><input class="slider" type="range" min="0" max="100" value="55" oninput="speedVal.innerText=this.value+'%'"> <b id="speedVal">55%</b>
+        <br><br><button class="yellow" onclick="dispatchNearest()">Dispatch Nearest Ambulance</button>
+        <button class="green" onclick="markRescued()">Mark Victim Rescued</button>
+      </div>
+      <div class="panel">
+        <h2>Live Sensor Feed</h2>
+        <div class="unit"><div>Human Detection</div><b class="danger">DETECTED</b></div>
+        <div class="unit"><div>Gas/Smoke Level</div><b class="warn">MEDIUM</b></div>
+        <div class="unit"><div>Water Level</div><b class="danger">HIGH</b></div>
+        <div class="unit"><div>Battery</div><b class="ok">82%</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="panel">
+      <h2>Hospital Database</h2>
+      <table>
+        <thead><tr><th>Hospital</th><th>Type</th><th>Beds</th><th>Contact</th><th>Status</th></tr></thead>
+        <tbody id="hospitalTable"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Emergency Case Register</h2>
+      <div class="form">
+        <input id="victim" placeholder="Victim / Case name">
+        <select id="severity"><option>Critical</option><option>Medium</option><option>Low</option></select>
+        <input id="location" placeholder="Location / Village / Area">
+        <select id="need"><option>Ambulance Needed</option><option>Boat Rescue Needed</option><option>Robot Search Needed</option><option>Medical Team Needed</option></select>
+        <textarea id="notes" placeholder="Situation notes, injury, flood level, trapped person, etc."></textarea>
+        <button onclick="addCase()">Add Emergency Case</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:20px">
+    <h2>Active Rescue Cases</h2>
+    <table>
+      <thead><tr><th>Case</th><th>Severity</th><th>Location</th><th>Required Help</th><th>Status</th></tr></thead>
+      <tbody id="caseTable"></tbody>
+    </table>
+  </div>
+</div>
+<footer>Prototype by Incredible Tech Lab — Educational disaster rescue dashboard demo. Replace sample data with real API/database before real deployment.</footer>
+
+<script>
+  const hospitals = [
+    ['National Hospital Colombo','General','42','011-2691111','Available',6.9271,79.8612],
+    ['Kandy National Hospital','General','28','081-2222261','Available',7.2906,80.6337],
+    ['Kurunegala Teaching Hospital','General','19','037-2222261','Busy',7.4863,80.3647],
+    ['Peradeniya Hospital','General','23','081-2388000','Available',7.2600,80.5970],
+    ['Colombo South Teaching Hospital','Emergency','12','011-2763065','Limited',6.8382,79.8650]
+  ];
+  const cases = [
+    ['Flood Victim A','Critical','Kurunegala river side','Boat + Ambulance','Searching'],
+    ['Landslide Alert B','Critical','Kandy hill area','Robot Search','Active'],
+    ['Trapped Person C','Medium','Colombo lowland','Ambulance','Pending']
+  ];
+  const units = [
+    ['Land Robot R-01',7.486,80.365,'🤖'],['Flood Boat B-01',7.492,80.358,'🚤'],['Ambulance A-12',7.481,80.370,'🚑'],['Ambulance A-18',7.500,80.350,'🚑']
+  ];
+
+  function updateClock(){document.getElementById('clock').innerText=new Date().toLocaleString('en-LK',{timeZone:'Asia/Colombo'});} setInterval(updateClock,1000); updateClock();
+  const map = L.map('map').setView([7.4863,80.3647],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  hospitals.forEach(h=>L.marker([h[5],h[6]]).addTo(map).bindPopup(`<b>${h[0]}</b><br>${h[1]} Hospital<br>Beds: ${h[2]}<br>Status: ${h[4]}<br>Contact: ${h[3]}`));
+  units.forEach(u=>L.marker([u[1],u[2]]).addTo(map).bindPopup(`<b>${u[3]} ${u[0]}</b><br>Status: Online`));
+  L.circle([7.4863,80.3647],{radius:900,color:'#ff4d5e',fillColor:'#ff4d5e',fillOpacity:.12}).addTo(map).bindPopup('Emergency search radius');
+
+  function renderHospitals(){hospitalTable.innerHTML=hospitals.map(h=>`<tr><td>${h[0]}</td><td>${h[1]}</td><td>${h[2]}</td><td>${h[3]}</td><td><span class="tag ${h[4]=='Busy'?'red':h[4]=='Limited'?'yellow':''}">${h[4]}</span></td></tr>`).join('')}
+  function renderCases(){caseTable.innerHTML=cases.map(c=>`<tr><td>${c[0]}</td><td><span class="tag ${c[1]=='Critical'?'red':c[1]=='Medium'?'yellow':''}">${c[1]}</span></td><td>${c[2]}</td><td>${c[3]}</td><td>${c[4]}</td></tr>`).join('');caseCount.innerText=cases.length}
+  function addCase(){ if(!victim.value.trim()) return alert('Add victim/case name first'); cases.unshift([victim.value,severity.value,location.value||'Unknown',need.value,'New']); renderCases(); alert('Emergency case added to dashboard'); victim.value=location.value=notes.value=''; }
+  function moveUnit(dir){ alert('Command sent to rescue unit: '+dir.toUpperCase()); }
+  function dispatchNearest(){ eta.innerText='05 min'; alert('Nearest ambulance dispatched. ETA updated.'); }
+  function markRescued(){ if(cases.length){cases[0][4]='RESCUED'; renderCases(); alert('Latest case marked as rescued.');} }
+  renderHospitals(); renderCases();
+</script>
+</body>
+</html>
